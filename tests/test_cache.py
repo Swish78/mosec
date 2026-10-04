@@ -35,6 +35,7 @@ def full_cache():
 
 # basic operations
 
+
 def test_put_and_get(cache):
     cache.put("a", 1)
     assert cache.get("a") == 1
@@ -71,7 +72,8 @@ def test_update_existing_key(cache):
     assert len(cache) == 1
 
 
-#eviction semantics 
+# eviction semantics
+
 
 def test_eviction_returns_key_value():
     c = SieveCache(2)
@@ -141,7 +143,7 @@ def test_all_visited_then_evict(full_cache):
     assert len(full_cache) == 2
 
 
-# capacity  
+# capacity
 
 
 def test_invalid_max_size():
@@ -159,6 +161,7 @@ def test_never_exceeds_max_size(n_inserts):
 
 # helpers
 
+
 def test_items(cache):
     cache.put("x", 10)
     cache.put("y", 20)
@@ -174,6 +177,7 @@ def test_keys(cache):
 
 
 # explicit removal
+
 
 def test_remove_existing(cache):
     cache.put("a", 1)

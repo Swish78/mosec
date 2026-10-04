@@ -30,7 +30,9 @@ Usage:
 
 from typing import Any, Dict, List
 
-from mosec import MultiModelWorker, Server
+from mosec import MultiModelWorker, Server, get_logger
+
+logger = get_logger()
 
 
 class LoRAWorker(MultiModelWorker):
@@ -55,20 +57,20 @@ class LoRAWorker(MultiModelWorker):
         if self.base_model is None:
             self._load_base_model()
 
-        print(f"[LoRAWorker] Loading adapter: {model_id}")
+        logger.info("Loading adapter: %s", model_id)
         # Placeholder: return (base_ref, adapter_id) as the "model" object.
         # In a real implementation this would be the merged PEFT model.
         return {"base": self.base_model, "adapter_id": model_id}
 
     def _load_base_model(self):
         """Load the base model once (not cached, never evicted)."""
-        print("[LoRAWorker] Loading base model (one-time)")
+        logger.info("Loading base model (one-time)")
         # e.g. AutoModelForCausalLM.from_pretrained("meta-llama/...")
         self.base_model = "base_model_placeholder"
 
     def unload_model(self, model_id: str, model: Any) -> None:
         """Free the adapter weights."""
-        print(f"[LoRAWorker] Evicting adapter: {model_id}")
+        logger.info("Evicting adapter: %s", model_id)
         # e.g. del model; torch.cuda.empty_cache()
 
     def forward_model(

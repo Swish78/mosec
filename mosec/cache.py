@@ -45,7 +45,7 @@ V = TypeVar("V")
 class _Node(Generic[K, V]):
     """Doubly-linked list node with a visited bit."""
 
-    __slots__ = ("key", "value", "visited", "prev", "next")
+    __slots__ = ("key", "next", "prev", "value", "visited")
 
     def __init__(self, key: K, value: V) -> None:
         self.key = key
@@ -68,6 +68,7 @@ class SieveCache(Generic[K, V]):
     """
 
     def __init__(self, max_size: int) -> None:
+        """Initialize cache."""
         if max_size < 1:
             raise ValueError(f"max_size must be >= 1, got {max_size}")
         self._max_size = max_size
@@ -82,9 +83,11 @@ class SieveCache(Generic[K, V]):
         return self._max_size
 
     def __len__(self) -> int:
+        """Return number of items."""
         return len(self._map)
 
     def __contains__(self, key: K) -> bool:
+        """Check if key is in cache."""
         return key in self._map
 
     def get(self, key: K) -> Optional[V]:

@@ -20,8 +20,7 @@ import pytest
 
 from mosec.worker import MultiModelWorker
 
-
-#  concrete test double 
+#  concrete test double
 
 
 class DummyMultiModelWorker(MultiModelWorker):
@@ -44,13 +43,8 @@ class DummyMultiModelWorker(MultiModelWorker):
     def unload_model(self, model_id: str, model: Any) -> None:
         self.unloaded.append(model_id)
 
-    def forward_model(
-        self, model_id: str, model: Any, data: List[Any]
-    ) -> List[Any]:
-        return [
-            {"model_id": model_id, "model_obj": model, "input": d}
-            for d in data
-        ]
+    def forward_model(self, model_id: str, model: Any, data: List[Any]) -> List[Any]:
+        return [{"model_id": model_id, "model_obj": model, "input": d} for d in data]
 
 
 @pytest.fixture
@@ -71,7 +65,7 @@ def small_cache_worker():
     return w
 
 
-#  sub-batching and ordering 
+#  sub-batching and ordering
 
 
 def test_single_model_id(worker):
@@ -91,7 +85,7 @@ def test_multiple_model_ids_preserve_order(worker):
     ]
     results = worker.forward(batch)
     assert len(results) == 5
-    for inp, out in zip(batch, results):
+    for inp, out in zip(batch, results, strict=True):
         assert out["model_id"] == inp["model_id"]
         assert out["input"] == inp
 
@@ -108,7 +102,7 @@ def test_single_item_mode():
     assert result["input"] == item
 
 
-#  cache hit / miss 
+#  cache hit / miss
 
 
 def test_cache_hit_does_not_reload(worker):
@@ -143,7 +137,7 @@ def test_eviction_unloads_correct_model(small_cache_worker):
     assert "B" not in w.unloaded
 
 
-#  custom get_model_id 
+#  custom get_model_id
 
 
 def test_override_get_model_id():
@@ -163,7 +157,7 @@ def test_override_get_model_id():
     assert results[1]["model_id"] == "v2"
 
 
-#  edge cases 
+#  edge cases
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])

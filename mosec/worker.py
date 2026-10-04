@@ -26,14 +26,13 @@ from __future__ import annotations
 
 import abc
 import json
-import logging
 import pickle
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, final
 
 from mosec.cache import SieveCache
-
 from mosec.errors import DecodingError, EncodingError
+from mosec.log import get_internal_logger
 from mosec.utils import ParseTarget
 
 MOSEC_REF_TEMPLATE = "#/components/schemas/{name}"
@@ -286,11 +285,14 @@ class MultiModelWorker(Worker):
     max_cache_size: int = 5
     """Maximum number of models to keep loaded simultaneously."""
 
+    MODEL_ID_KEY: str = "model_id"
+    """Key used to extract the model identifier from each request item."""
+
     def __init__(self):
         """Initialize the worker and its model cache."""
         super().__init__()
         self._model_cache: SieveCache[str, Any] = SieveCache(self.max_cache_size)
-        self._logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self._logger = get_internal_logger()
 
     @abc.abstractmethod
     def load_model(self, model_id: str) -> Any:
@@ -320,9 +322,7 @@ class MultiModelWorker(Worker):
         pass
 
     @abc.abstractmethod
-    def forward_model(
-        self, model_id: str, model: Any, data: List[Any]
-    ) -> List[Any]:
+    def forward_model(self, model_id: str, model: Any, data: List[Any]) -> List[Any]:
         """Run inference on a sub-batch for a single model.
 
         Args:
@@ -347,8 +347,9 @@ class MultiModelWorker(Worker):
         Returns:
             The model identifier string.
         """
-        return item["model_id"]
+        return item[self.MODEL_ID_KEY]
 
+    @final
     def forward(self, data: Any) -> Any:
         """Group the batch by model_id, manage the cache, dispatch sub-batches.
 
@@ -362,8 +363,8 @@ class MultiModelWorker(Worker):
             mid = self.get_model_id(item)
             groups[mid].append((idx, item))
 
-        # Process cache-hit groups before cache-miss groups so that hits
-        # are never blocked behind a slow model load.
+        # Process cache-hit groups before cache-miss groups to avoid
+        # evicting a model needed later in this forward call.
         hit_groups = []
         miss_groups = []
         for model_id, indexed_items in groups.items():
@@ -377,7 +378,8 @@ class MultiModelWorker(Worker):
             model = self._ensure_model(model_id)
             sub_data = [item for _, item in indexed_items]
             sub_results = self.forward_model(model_id, model, sub_data)
-            for (orig_idx, _), result in zip(indexed_items, sub_results):
+            del model
+            for (orig_idx, _), result in zip(indexed_items, sub_results, strict=True):
                 results[orig_idx] = result
 
         return results if is_batched else results[0]
@@ -400,8 +402,8 @@ class MultiModelWorker(Worker):
                     model_id,
                 )
                 self.unload_model(evicted_key, evicted_model)
+                del evicted, evicted_key, evicted_model
 
         model = self.load_model(model_id)
         self._model_cache.put(model_id, model)
         return model
-

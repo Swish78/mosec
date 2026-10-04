@@ -32,11 +32,13 @@ Usage:
 
 from typing import Any, Dict, List
 
-from mosec import MultiModelWorker, Server
+from mosec import MultiModelWorker, Server, get_logger
+
+logger = get_logger()
 
 
 class YOLOMultiModel(MultiModelWorker):
-    """Serve multiple YOLO variants from a single worker with LRU caching."""
+    """Serve multiple YOLO variants from a single worker with SIEVE caching."""
 
     # Keep up to 3 YOLO model variants in GPU memory at once.
     max_cache_size = 3
@@ -50,12 +52,12 @@ class YOLOMultiModel(MultiModelWorker):
         # Lazy import so the server module itself stays lightweight.
         from ultralytics import YOLO  # type: ignore[import-untyped]
 
-        print(f"[YOLOMultiModel] Loading model: {model_id}")
+        logger.info("Loading model: %s", model_id)
         return YOLO(f"models/{model_id}.pt")
 
     def unload_model(self, model_id: str, model: Any) -> None:
         """Free GPU memory when a model is evicted."""
-        print(f"[YOLOMultiModel] Evicting model: {model_id}")
+        logger.info("Evicting model: %s", model_id)
         del model
 
     def forward_model(
