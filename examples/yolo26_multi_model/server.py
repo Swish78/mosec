@@ -50,7 +50,7 @@ class YOLOMultiModel(MultiModelWorker):
             models/yolo11n.pt, models/yolo11s-custom.pt, etc.
         """
         # Lazy import so the server module itself stays lightweight.
-        from ultralytics import YOLO  # type: ignore[import-untyped]
+        from ultralytics import YOLO  # type: ignore
 
         logger.info("Loading model: %s", model_id)
         return YOLO(f"models/{model_id}.pt")
